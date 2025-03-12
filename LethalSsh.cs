@@ -96,7 +96,7 @@ public class LethalSsh : BaseUnityPlugin
     {
         private static bool Prefix(ref Terminal __instance, string newText)
         {
-            Logger.LogDebug($">> TextChanged {newText}");
+            Logger.LogDebug($">> TextChanged {newText.Split("\n").Last()}");
             if (!LethalSsh.Instance.Active)
                 return true;
 
