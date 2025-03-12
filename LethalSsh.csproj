@@ -4,7 +4,7 @@
     <PropertyGroup>
         <Product>LethalSSH</Product>
         <!-- Change to whatever version you're currently on. -->
-        <Version>0.0.1</Version>
+        <Version>0.0.2</Version>
         <PackageId>LethalSsh</PackageId>
     </PropertyGroup>
 
