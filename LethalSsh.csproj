@@ -2,15 +2,16 @@
 
     <!-- BepInEx Properties -->
     <PropertyGroup>
-        <Product>LethalSSH</Product>
+        <AssemblyName>baer1.LethalSSH</AssemblyName>
+        <Product>LethalSsh</Product>
         <!-- Change to whatever version you're currently on. -->
         <Version>0.0.2</Version>
-        <PackageId>LethalSsh</PackageId>
     </PropertyGroup>
 
     <!-- Project Properties -->
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
+        <RootNamespace>LethalSsh</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
