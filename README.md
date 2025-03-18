@@ -8,8 +8,8 @@ adds ssh to the terminal
 
 Usage:
 
-`ssh \<username\>@\<host\> \<password\>`
+`ssh <username>@<host> <password>`
 
 or
 
-`ssh \<username\>@\<host\> \<port\> \<password\>`
+`ssh <username>@<host> <port> <password>`
