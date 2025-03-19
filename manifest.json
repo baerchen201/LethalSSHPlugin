@@ -1,6 +1,6 @@
 {
   "name": "LethalSSH",
-  "version_number": "0.0.4",
+  "version_number": "0.1.0",
   "website_url": "https://github.com/baerchen201/LethalSSHPlugin",
   "description": "Adds SSH to the terminal",
   "dependencies": [
