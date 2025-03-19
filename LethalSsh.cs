@@ -10,7 +10,6 @@ using UnityEngine;
 namespace LethalSsh;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-[BepInDependency("atomic.terminalapi")]
 public class LethalSsh : BaseUnityPlugin
 {
     public static LethalSsh Instance { get; private set; } = null!;
