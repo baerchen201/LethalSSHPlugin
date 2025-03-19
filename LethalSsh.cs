@@ -173,13 +173,17 @@ public class LethalSsh : BaseUnityPlugin
         private static void Prefix()
         {
             Logger.LogDebug($">> QuitTerminal");
-            if (!LethalSsh.Instance.Active)
-                return;
-            LethalSsh.Instance.sshShell!.Close();
-            LethalSsh.Instance.sshClient!.Disconnect();
-            LethalSsh.Instance.sshClient = null;
-            LethalSsh.Instance._sgrCloseTags.Clear();
-            LethalSsh.Instance._sgrDim = false;
+            LethalSsh.Instance.ResetSSH();
+        }
+    }
+
+    [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.StartDisconnect))]
+    public class StartDisconnectPatch
+    {
+        private static void Prefix()
+        {
+            Logger.LogDebug($">> StartDisconnect");
+            LethalSsh.Instance.ResetSSH();
         }
     }
 
@@ -534,5 +538,16 @@ public class LethalSsh : BaseUnityPlugin
         Harmony?.UnpatchSelf();
 
         Logger.LogDebug("Finished unpatching!");
+    }
+
+    internal void ResetSSH()
+    {
+        if (!LethalSsh.Instance.Active)
+            return;
+        LethalSsh.Instance.sshShell!.Close();
+        LethalSsh.Instance.sshClient!.Disconnect();
+        LethalSsh.Instance.sshClient = null;
+        LethalSsh.Instance._sgrCloseTags.Clear();
+        LethalSsh.Instance._sgrDim = false;
     }
 }
