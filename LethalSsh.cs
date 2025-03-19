@@ -25,6 +25,7 @@ public class LethalSsh : BaseUnityPlugin
     internal ShellStream? sshShell;
 
     internal StringBuilder _sgrCloseTags = new StringBuilder();
+    internal bool _sgrDim = false;
 
     private void Awake()
     {
@@ -116,6 +117,7 @@ public class LethalSsh : BaseUnityPlugin
                 }
 
                 LethalSsh.Instance._sgrCloseTags.Clear();
+                LethalSsh.Instance._sgrDim = false;
                 return false;
             }
 
@@ -167,6 +169,7 @@ public class LethalSsh : BaseUnityPlugin
             LethalSsh.Instance.sshClient!.Disconnect();
             LethalSsh.Instance.sshClient = null;
             LethalSsh.Instance._sgrCloseTags.Clear();
+            LethalSsh.Instance._sgrDim = false;
         }
     }
 
@@ -230,6 +233,12 @@ public class LethalSsh : BaseUnityPlugin
                                     LethalSsh.Instance._sgrCloseTags.Insert(0, "</b>");
                                     sb.Append("<b>");
                                     break;
+                                // Dim
+                                case "2":
+                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "<alpha=#FF>");
+                                    LethalSsh.Instance._sgrDim = true;
+                                    sb.Append("<alpha=#33>");
+                                    break;
                                 // Italic
                                 case "3":
                                     LethalSsh.Instance._sgrCloseTags.Insert(0, "</i>");
@@ -268,7 +277,7 @@ public class LethalSsh : BaseUnityPlugin
                                     sb.Append(
                                         $"<color=#{
                                                 LethalSsh.GetColorByCode(p)
-                                            }>"
+                                            }{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
                                     );
                                     break;
 
@@ -335,7 +344,7 @@ public class LethalSsh : BaseUnityPlugin
                                                                         "</color>"
                                                                     );
                                                                     sb.Append(
-                                                                        $"<color=#{rgb.ToString()}>"
+                                                                        $"<color=#{rgb.ToString()}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
                                                                     );
                                                                 }
                                                                 else
@@ -369,7 +378,7 @@ public class LethalSsh : BaseUnityPlugin
                                                                 "</color>"
                                                             );
                                                             sb.Append(
-                                                                $"<color=#{LethalSsh.Get256ColorByCode(color)}>"
+                                                                $"<color=#{LethalSsh.Get256ColorByCode(color)}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
                                                             );
                                                         }
                                                         else
@@ -397,6 +406,7 @@ public class LethalSsh : BaseUnityPlugin
                                 default:
                                     string _ = LethalSsh.Instance._sgrCloseTags.ToString();
                                     LethalSsh.Instance._sgrCloseTags.Clear();
+                                    LethalSsh.Instance._sgrDim = false;
                                     return _;
                             }
 
