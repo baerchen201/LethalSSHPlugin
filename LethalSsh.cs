@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using Renci.SshNet;
@@ -24,6 +25,8 @@ public class LethalSsh : BaseUnityPlugin
 
     internal ShellStream? sshShell;
 
+    internal static ConfigEntry<bool> enableANSI { get; private set; } = null!;
+
     internal StringBuilder _sgrCloseTags = new StringBuilder();
     internal bool _sgrDim = false;
 
@@ -31,6 +34,13 @@ public class LethalSsh : BaseUnityPlugin
     {
         Logger = base.Logger;
         Instance = this;
+
+        enableANSI = base.Config.Bind(
+            "General",
+            "enableFormatting",
+            true,
+            "Enable or disable text colorization and formatting."
+        );
 
         Patch();
 
@@ -188,235 +198,239 @@ public class LethalSsh : BaseUnityPlugin
             string read = LethalSsh.Instance.sshShell.Read();
             if (read.Length == 0)
                 return;
+            string last = Regex
+                .Split(
+                    (__instance.currentText + read).Split("\n").TakeLast(50).Join(null, "\n"),
+                    @"\x1B\[[0-3]?[jJ]"
+                )
+                .Last();
             __instance.currentText = Regex.Replace(
-                Regex.Replace(
-                    Regex
-                        .Split(
-                            (__instance.currentText + read)
-                                .Split("\n")
-                                .TakeLast(50)
-                                .Join(null, "\n"),
-                            @"\x1B\[[0-3]?[jJ]"
-                        )
-                        .Last(),
-                    @"\x1B\[([0-9;]*)[mM]",
-                    (Match m) =>
-                    {
-                        StringBuilder sb = new StringBuilder();
-
-                        string[] parameters = m.Groups[1].Value.Split(";");
-
-                        Func<string, string, bool>? next = null;
-                        string _previous = null!;
-                        foreach (string p in parameters)
+                LethalSsh.enableANSI.Value
+                    ? Regex.Replace(
+                        last,
+                        @"\x1B\[([0-9;]*)[mM]",
+                        (Match m) =>
                         {
-                            Logger.LogDebug($">> Parsing ANSI code {p}");
-                            if (next != null)
-                            {
-                                Logger.LogDebug($"Found next function, previous: {_previous}");
-                                if (!next(_previous, p))
-                                {
-                                    _previous = p;
-                                    Logger.LogDebug($"previous overwritten {_previous}");
-                                }
-                                else
-                                {
-                                    Logger.LogDebug($"previous not overwritten: {_previous}");
-                                }
-                                continue;
-                            }
+                            StringBuilder sb = new StringBuilder();
 
-                            switch (p)
-                            {
-                                // Bold
-                                case "1":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</b>");
-                                    sb.Append("<b>");
-                                    break;
-                                // Dim
-                                case "2":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "<alpha=#FF>");
-                                    LethalSsh.Instance._sgrDim = true;
-                                    sb.Append("<alpha=#33>");
-                                    break;
-                                // Italic
-                                case "3":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</i>");
-                                    sb.Append("<i>");
-                                    break;
-                                // Underline
-                                case "4":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</u>");
-                                    sb.Append("<u>");
-                                    break;
-                                // Strikethrough
-                                case "9":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</s>");
-                                    sb.Append("<s>");
-                                    break;
+                            string[] parameters = m.Groups[1].Value.Split(";");
 
-                                // Text Color
-                                case "30":
-                                case "31":
-                                case "32":
-                                case "33":
-                                case "34":
-                                case "35":
-                                case "36":
-                                case "37":
-                                // Bright Text Color
-                                case "90":
-                                case "91":
-                                case "92":
-                                case "93":
-                                case "94":
-                                case "95":
-                                case "96":
-                                case "97":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</color>");
-                                    sb.Append(
-                                        $"<color=#{
+                            Func<string, string, bool>? next = null;
+                            string _previous = null!;
+                            foreach (string p in parameters)
+                            {
+                                Logger.LogDebug($">> Parsing ANSI code {p}");
+                                if (next != null)
+                                {
+                                    Logger.LogDebug($"Found next function, previous: {_previous}");
+                                    if (!next(_previous, p))
+                                    {
+                                        _previous = p;
+                                        Logger.LogDebug($"previous overwritten {_previous}");
+                                    }
+                                    else
+                                    {
+                                        Logger.LogDebug($"previous not overwritten: {_previous}");
+                                    }
+                                    continue;
+                                }
+
+                                switch (p)
+                                {
+                                    // Bold
+                                    case "1":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</b>");
+                                        sb.Append("<b>");
+                                        break;
+                                    // Dim
+                                    case "2":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "<alpha=#FF>");
+                                        LethalSsh.Instance._sgrDim = true;
+                                        sb.Append("<alpha=#33>");
+                                        break;
+                                    // Italic
+                                    case "3":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</i>");
+                                        sb.Append("<i>");
+                                        break;
+                                    // Underline
+                                    case "4":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</u>");
+                                        sb.Append("<u>");
+                                        break;
+                                    // Strikethrough
+                                    case "9":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</s>");
+                                        sb.Append("<s>");
+                                        break;
+
+                                    // Text Color
+                                    case "30":
+                                    case "31":
+                                    case "32":
+                                    case "33":
+                                    case "34":
+                                    case "35":
+                                    case "36":
+                                    case "37":
+                                    // Bright Text Color
+                                    case "90":
+                                    case "91":
+                                    case "92":
+                                    case "93":
+                                    case "94":
+                                    case "95":
+                                    case "96":
+                                    case "97":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</color>");
+                                        sb.Append(
+                                            $"<color=#{
                                                 LethalSsh.GetColorByCode(p)
                                             }{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
-                                    );
-                                    break;
+                                        );
+                                        break;
 
-                                // BG Color
-                                case "40":
-                                case "41":
-                                case "42":
-                                case "43":
-                                case "44":
-                                case "45":
-                                case "46":
-                                case "47":
-                                // Bright BG Color
-                                case "100":
-                                case "101":
-                                case "102":
-                                case "103":
-                                case "104":
-                                case "105":
-                                case "106":
-                                case "107":
-                                    LethalSsh.Instance._sgrCloseTags.Insert(0, "</mark>");
-                                    sb.Append(
-                                        $"<mark=#{
+                                    // BG Color
+                                    case "40":
+                                    case "41":
+                                    case "42":
+                                    case "43":
+                                    case "44":
+                                    case "45":
+                                    case "46":
+                                    case "47":
+                                    // Bright BG Color
+                                    case "100":
+                                    case "101":
+                                    case "102":
+                                    case "103":
+                                    case "104":
+                                    case "105":
+                                    case "106":
+                                    case "107":
+                                        LethalSsh.Instance._sgrCloseTags.Insert(0, "</mark>");
+                                        sb.Append(
+                                            $"<mark=#{
                                                 LethalSsh.GetColorByCode(p)
                                             }55>"
-                                    );
-                                    break;
+                                        );
+                                        break;
 
-                                // Extended Color (8/24 bit)
-                                case "38":
-                                case "48":
-                                    next = (_, mode) =>
-                                    {
-                                        switch (mode)
+                                    // Extended Color (8/24 bit)
+                                    case "38":
+                                    case "48":
+                                        next = (_, mode) =>
                                         {
-                                            // 24-bit color (True color, RGB)
-                                            case "2":
-                                                StringBuilder rgb = new StringBuilder();
-                                                next = (
-                                                    (_, r) =>
-                                                    {
-                                                        rgb.Append(
-                                                            ((byte)Int32.Parse(r)).ToString("X2")
-                                                        );
-                                                        next = (_, g) =>
+                                            switch (mode)
+                                            {
+                                                // 24-bit color (True color, RGB)
+                                                case "2":
+                                                    StringBuilder rgb = new StringBuilder();
+                                                    next = (
+                                                        (_, r) =>
                                                         {
                                                             rgb.Append(
-                                                                ((byte)Int32.Parse(g)).ToString(
+                                                                ((byte)Int32.Parse(r)).ToString(
                                                                     "X2"
                                                                 )
                                                             );
-                                                            next = (previous, b) =>
+                                                            next = (_, g) =>
                                                             {
                                                                 rgb.Append(
-                                                                    ((byte)Int32.Parse(b)).ToString(
+                                                                    ((byte)Int32.Parse(g)).ToString(
                                                                         "X2"
                                                                     )
                                                                 );
-                                                                if (previous == "38")
+                                                                next = (previous, b) =>
                                                                 {
-                                                                    LethalSsh.Instance._sgrCloseTags.Insert(
-                                                                        0,
-                                                                        "</color>"
+                                                                    rgb.Append(
+                                                                        (
+                                                                            (byte)Int32.Parse(b)
+                                                                        ).ToString("X2")
                                                                     );
-                                                                    sb.Append(
-                                                                        $"<color=#{rgb.ToString()}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
-                                                                    );
-                                                                }
-                                                                else
-                                                                {
-                                                                    LethalSsh.Instance._sgrCloseTags.Insert(
-                                                                        0,
-                                                                        "</mark>"
-                                                                    );
-                                                                    sb.Append(
-                                                                        $"<mark=#{rgb.ToString()}55>"
-                                                                    );
-                                                                }
-                                                                next = null;
-                                                                return false;
+                                                                    if (previous == "38")
+                                                                    {
+                                                                        LethalSsh.Instance._sgrCloseTags.Insert(
+                                                                            0,
+                                                                            "</color>"
+                                                                        );
+                                                                        sb.Append(
+                                                                            $"<color=#{rgb.ToString()}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
+                                                                        );
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        LethalSsh.Instance._sgrCloseTags.Insert(
+                                                                            0,
+                                                                            "</mark>"
+                                                                        );
+                                                                        sb.Append(
+                                                                            $"<mark=#{rgb.ToString()}55>"
+                                                                        );
+                                                                    }
+                                                                    next = null;
+                                                                    return false;
+                                                                };
+                                                                return true;
                                                             };
                                                             return true;
-                                                        };
-                                                        return true;
-                                                    }
-                                                );
-                                                break;
-                                            // 8-bit color
-                                            case "5":
-                                                next = (
-                                                    (previous, color) =>
-                                                    {
-                                                        if (previous == "38")
-                                                        {
-                                                            LethalSsh.Instance._sgrCloseTags.Insert(
-                                                                0,
-                                                                "</color>"
-                                                            );
-                                                            sb.Append(
-                                                                $"<color=#{LethalSsh.Get256ColorByCode(color)}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
-                                                            );
                                                         }
-                                                        else
+                                                    );
+                                                    break;
+                                                // 8-bit color
+                                                case "5":
+                                                    next = (
+                                                        (previous, color) =>
                                                         {
-                                                            LethalSsh.Instance._sgrCloseTags.Insert(
-                                                                0,
-                                                                "</mark>"
-                                                            );
-                                                            sb.Append(
-                                                                $"<mark=#{LethalSsh.Get256ColorByCode(color)}55>"
-                                                            );
+                                                            if (previous == "38")
+                                                            {
+                                                                LethalSsh.Instance._sgrCloseTags.Insert(
+                                                                    0,
+                                                                    "</color>"
+                                                                );
+                                                                sb.Append(
+                                                                    $"<color=#{LethalSsh.Get256ColorByCode(color)}{(LethalSsh.Instance._sgrDim ? "33" : "")}>"
+                                                                );
+                                                            }
+                                                            else
+                                                            {
+                                                                LethalSsh.Instance._sgrCloseTags.Insert(
+                                                                    0,
+                                                                    "</mark>"
+                                                                );
+                                                                sb.Append(
+                                                                    $"<mark=#{LethalSsh.Get256ColorByCode(color)}55>"
+                                                                );
+                                                            }
+
+                                                            next = null;
+                                                            return false;
                                                         }
+                                                    );
+                                                    break;
+                                            }
+                                            return true;
+                                        };
+                                        break;
 
-                                                        next = null;
-                                                        return false;
-                                                    }
-                                                );
-                                                break;
-                                        }
-                                        return true;
-                                    };
-                                    break;
+                                    // Clear
+                                    default:
+                                        string _ = LethalSsh.Instance._sgrCloseTags.ToString();
+                                        LethalSsh.Instance._sgrCloseTags.Clear();
+                                        LethalSsh.Instance._sgrDim = false;
+                                        return _;
+                                }
 
-                                // Clear
-                                default:
-                                    string _ = LethalSsh.Instance._sgrCloseTags.ToString();
-                                    LethalSsh.Instance._sgrCloseTags.Clear();
-                                    LethalSsh.Instance._sgrDim = false;
-                                    return _;
+                                _previous = p;
                             }
 
-                            _previous = p;
+                            Logger.LogDebug(
+                                $"<< Parsed \x1B[{m.Groups[1].Value}m: {sb.ToString()}"
+                            );
+                            return sb.ToString();
                         }
-
-                        Logger.LogDebug($"<< Parsed \x1B[{m.Groups[1].Value}m: {sb.ToString()}");
-                        return sb.ToString();
-                    }
-                ),
+                    )
+                    : last,
                 @"\x1B\[[?;=0-9]*[a-zA-Z~]",
                 ""
             );
