@@ -6,4 +6,10 @@ Please report any issues on [GitHub](https://github.com/baerchen201/LethalSSHPlu
 
 adds ssh to the terminal
 
-Usage: ssh \<username\>@\<host\> \<password\>
+Usage:
+
+`ssh <username>@<host> <password>`
+
+or
+
+`ssh <username>@<host> <port> <password>`
