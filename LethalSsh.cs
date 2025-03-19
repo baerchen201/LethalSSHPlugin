@@ -61,15 +61,29 @@ public class LethalSsh : BaseUnityPlugin
                 {
                     case 4:
                         arg1 = args[1].Split("@");
-                        if (arg1.Length != 2) {
+                        if (arg1.Length != 2)
+                        {
                             __result.displayText = "Invalid arguments";
                             break;
                         }
                         int port = 22;
                         Int32.TryParse(args[2], out port);
-                        LethalSsh.Instance.sshClient = new SshClient(arg1[1], port, arg1[0], args[3]);
+                        LethalSsh.Instance.sshClient = new SshClient(
+                            arg1[1],
+                            port,
+                            arg1[0],
+                            args[3]
+                        );
                         LethalSsh.Instance.sshClient.Connect();
-                        LethalSsh.Instance.sshShell = LethalSsh.Instance.sshClient.CreateShellStream("linux", 20, 20, 800, 600, 1024);
+                        LethalSsh.Instance.sshShell =
+                            LethalSsh.Instance.sshClient.CreateShellStream(
+                                "linux",
+                                20,
+                                20,
+                                800,
+                                600,
+                                1024
+                            );
                         __result.displayText = "";
                         break;
                     case 3:
